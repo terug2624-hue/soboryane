@@ -3,16 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Соборяне v44</title>
-    <link rel="apple-touch-icon" href="icon-512.png">
-    <link rel="manifest" href="manifest.json">
+    <title>СОБОРЯНЕ v45</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Твои настройки из Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyC_dR0ih2xTPTN7gH403UWp6a9E0MwwYKQ",
             authDomain: "soboryane-f9c70.firebaseapp.com",
@@ -23,137 +19,81 @@
             databaseURL: "https://soboryane-f9c70-default-rtdb.firebaseio.com"
         };
 
-        // Инициализация
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const scheduleRef = ref(db, 'schedule');
-        const chatRef = ref(db, 'chat');
+        const dataRef = ref(db, 'schedule_data');
 
-        // Функции для работы с облаком
-        window.saveToCloud = (data) => set(scheduleRef, data);
-        window.sendMsgToCloud = (msg) => push(chatRef, { 
-            text: msg, 
-            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
-        });
+        // Сохранение всей формы в облако
+        window.saveToCloud = () => {
+            const inputs = document.querySelectorAll('select, input');
+            const data = {};
+            inputs.forEach(el => { data[el.id] = el.value; });
+            set(dataRef, data).then(() => alert("Сохранено в облаке для всех!"));
+        };
 
-        // Слушаем изменения расписания (синхронизация)
-        onValue(scheduleRef, (snapshot) => {
+        // Авто-загрузка данных для всех
+        onValue(dataRef, (snapshot) => {
             const data = snapshot.val();
             if (data) {
                 Object.keys(data).forEach(id => {
                     const el = document.getElementById(id);
-                    if (el && el !== document.activeElement) el.value = data[id];
+                    if (el) el.value = data[id];
                 });
-            }
-        });
-
-        // Слушаем чат (синхронизация)
-        onValue(chatRef, (snapshot) => {
-            const msgs = snapshot.val();
-            const box = document.getElementById('chat-box');
-            box.innerHTML = '';
-            if (msgs) {
-                Object.values(msgs).forEach(m => {
-                    const div = document.createElement('div');
-                    div.className = "bg-white p-2 rounded shadow-sm border-l-4 border-blue-400 text-sm";
-                    div.innerHTML = `<span class="text-gray-400 text-[10px] block">${m.time}</span>${m.text}`;
-                    box.appendChild(div);
-                });
-                box.scrollTop = box.scrollHeight;
             }
         });
     </script>
-
     <style>
-        .ios-fix { -webkit-tap-highlight-color: transparent; }
-        body { background: #f0f2f5; font-family: -apple-system, sans-serif; }
-        input:focus { outline: 2px solid #3b82f6; background: #eff6ff; }
+        body { background-color: #1a1d23; color: white; font-family: sans-serif; }
+        .card { background: #2d333b; border: 1px solid #444c56; border-radius: 12px; }
+        select, input { background: #444c56; color: white; border: 1px solid #57606a; border-radius: 8px; width: 100%; padding: 8px; appearance: none; }
+        label { font-size: 10px; color: #8b949e; text-transform: uppercase; font-weight: bold; }
     </style>
 </head>
-<body class="p-2 ios-fix">
-    <div class="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
-        <div class="bg-blue-800 p-4 text-white text-center">
-            <h1 class="text-xl font-bold italic">⛪ Соборяне v44</h1>
-            <p class="text-xs opacity-80">Облачная синхронизация активна</p>
-        </div>
+<body class="p-4">
+    <div class="max-w-md mx-auto">
+        <h1 class="text-center text-2xl font-bold mb-4 tracking-widest">СОБОРЯНЕ</h1>
         
-        <div class="p-4">
-            <div class="overflow-hidden border rounded-xl mb-6 shadow-sm">
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-blue-50 text-blue-900 text-xs uppercase">
-                        <tr>
-                            <th class="p-3 border-b w-16">День</th>
-                            <th class="p-3 border-b">Утро</th>
-                            <th class="p-3 border-b">Вечер</th>
-                        </tr>
-                    </thead>
-                    <tbody id="schedule-body">
-                        </tbody>
-                </table>
-            </div>
+        <select id="main-holiday" class="mb-6 text-center italic border-blue-500 border-2">
+            <option>Воскресенье обычное</option>
+            <option>Пасха Христова</option>
+            <option>Рождество Господне</option>
+        </select>
 
-            <div class="bg-gray-100 rounded-2xl p-4 border border-gray-200">
-                <h2 class="font-bold text-blue-800 mb-3 flex items-center gap-2">
-                    <span>💬</span> Объявления причта
-                </h2>
-                <div id="chat-box" class="h-48 overflow-y-auto mb-3 space-y-2 p-1 flex flex-col">
-                    </div>
-                <div class="flex gap-2">
-                    <input id="chat-input" type="text" placeholder="Написать..." 
-                           class="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm shadow-inner">
-                    <button onclick="handleSendMsg()" 
-                            class="bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 rounded-full flex items-center justify-center transition shadow-lg">
-                        ➤
-                    </button>
-                </div>
+        <div class="card p-4 mb-4">
+            <h2 class="text-blue-400 font-bold mb-3 border-b border-gray-600 pb-1 text-lg">Суббота (Вечер):</h2>
+            <div class="mb-3">
+                <label>ВСЕНОЩНАЯ</label>
+                <select id="vsenoshnaya"><option>-</option><option>о. Николай</option><option>о. Александр</option><option>о. Петр</option></select>
             </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div><label>ИСПОВЕДЬ</label><select id="ispoved"><option>-</option><option>о. Николай</option><option>о. Александр</option></select></div>
+                <div><label>ПАНИХИДА</label><select id="panihida-v"><option>-</option><option>о. Николай</option><option>о. Александр</option></select></div>
+                <div><label>ПОМАЗАНИЕ 1</label><select id="pomaz1"><option>-</option><option>о. Николай</option><option>о. Александр</option></select></div>
+                <div><label>ПОМАЗАНИЕ 2</label><select id="pomaz2"><option>-</option><option>о. Николай</option><option>о. Александр</option></select></div>
+            </div>
+        </div>
+
+        <div class="card p-4 mb-6">
+            <h2 class="text-blue-400 font-bold mb-3 border-b border-gray-600 pb-1 text-lg">Воскресенье (Утро):</h2>
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <div><label>РАННЯЯ</label><select id="rannyaya"><option>-</option><option>о. Николай</option></select></div>
+                <div><label>ТРЕБНЫЙ</label><select id="treb1"><option>-</option><option>о. Александр</option></select></div>
+                <div><label>ПОЗДНЯЯ</label><select id="pozdnyaya"><option>-</option><option>о. Петр</option></select></div>
+                <div><label>ТРЕБНЫЙ</label><select id="treb2"><option>-</option><option>о. Николай</option></select></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2">
+            <button onclick="saveToCloud()" class="bg-blue-900 py-3 rounded-lg font-bold shadow-lg flex flex-col items-center">
+                <span>💾</span> <span class="text-[10px]">СОХР</span>
+            </button>
+            <button class="bg-orange-500 py-3 rounded-lg font-bold shadow-lg text-black flex flex-col items-center">
+                <span>👁</span> <span class="text-[10px]">ВИД</span>
+            </button>
+            <button class="bg-gray-600 py-3 rounded-lg font-bold shadow-lg flex flex-col items-center">
+                <span>🖨</span> <span class="text-[10px]">ПЕЧАТЬ</span>
+            </button>
         </div>
     </div>
-
-    <script>
-        const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-        const body = document.getElementById('schedule-body');
-
-        // Генерируем строки таблицы
-        days.forEach((day, i) => {
-            const row = document.createElement('tr');
-            row.className = "hover:bg-gray-50 transition";
-            row.innerHTML = `
-                <td class="p-3 border-b font-bold text-gray-500 text-sm">${day}</td>
-                <td class="p-2 border-b"><input oninput="updateCloud()" id="m-${i}" type="text" class="w-full p-1.5 border rounded text-sm transition shadow-sm" placeholder="..."></td>
-                <td class="p-2 border-b"><input oninput="updateCloud()" id="e-${i}" type="text" class="w-full p-1.5 border rounded text-sm transition shadow-sm" placeholder="..."></td>
-            `;
-            body.appendChild(row);
-        });
-
-        // Функция отправки расписания в облако
-        function updateCloud() {
-            const data = {};
-            days.forEach((_, i) => {
-                data[`m-${i}`] = document.getElementById(`m-${i}`).value;
-                data[`e-${i}`] = document.getElementById(`e-${i}`).value;
-            });
-            window.saveToCloud(data);
-        }
-
-        // Функция отправки сообщения
-        function handleSendMsg() {
-            const input = document.getElementById('chat-input');
-            if (input.value.trim()) {
-                window.sendMsgToCloud(input.value);
-                input.value = '';
-            }
-        }
-
-        // Поддержка Enter в чате
-        document.getElementById('chat-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleSendMsg();
-        });
-
-        // Service Worker для PWA
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
-        }
-    </script>
 </body>
 </html>
