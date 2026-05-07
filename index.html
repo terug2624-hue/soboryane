@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Соборяне v45 (Облачный)</title>
+    <title>Соборяне v46 (Облачный)</title>
 
     <link rel="manifest" href="manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
@@ -30,16 +30,13 @@
         const db = getDatabase(app);
         const dataRef = ref(db, 'shared_schedule');
 
-        // Функция отправки в облако (вызывается из обычной функции save)
         window.sendToCloud = (data) => {
             set(dataRef, data).catch(err => console.error("Ошибка облака:", err));
         };
 
-        // Слушатель обновлений из облака
         onValue(dataRef, (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                // Если мы сейчас не печатаем текст, обновляем данные
                 if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
                     window.applyData(data);
                 }
@@ -81,7 +78,6 @@
         .btn-save { background: var(--blue); }
         .btn-view { background: var(--orange); }
         .btn-print { background: #34495e; }
-        .btn-share-link { background: #2980b9; }
         .del-btn { position: absolute; top: 5px; right: 5px; background: #e74c3c; color: white; border: none; border-radius: 4px; padding: 4px 8px; z-index: 10; }
 
         .exit-viewer { text-align: center; margin: 20px 0; color: var(--blue); font-weight: bold; cursor: pointer; text-decoration: underline; display: none; }
@@ -133,7 +129,6 @@
         <button id="save-btn" class="btn btn-save" onclick="save()">💾 Сохр</button>
         <button class="btn btn-view" onclick="toggleView(true)">👁️ Вид</button>
         <button class="btn btn-print" onclick="window.print()">🖨️ Печать</button>
-        <button class="btn btn-share-link" onclick="shareAsLink()">🔗 Ссылка</button>
     </div>
 
     <div class="exit-viewer" onclick="toggleView(false)">← Вернуться в редактор</div>
@@ -296,10 +291,7 @@
     function save() {
         const data = collectData();
         localStorage.setItem('church_v43', JSON.stringify(data));
-        
-        // ОТПРАВКА В ОБЛАКО
         if (window.sendToCloud) window.sendToCloud(data);
-        
         const b = document.getElementById('save-btn'); b.innerText = '✅ ОК';
         setTimeout(() => b.innerText = '💾 СОХР', 1000);
     }
@@ -309,23 +301,10 @@
         else document.body.classList.remove('view-only');
     }
 
-    function shareAsLink() {
-        const encodedData = btoa(unescape(encodeURIComponent(JSON.stringify(collectData()))));
-        const url = window.location.href.split('#')[0] + '#data=' + encodedData;
-        const el = document.createElement('textarea'); el.value = url; document.body.appendChild(el); el.select();
-        document.execCommand('copy'); document.body.removeChild(el);
-        alert("Ссылка скопирована!");
-    }
-
     window.onload = () => {
         syncSelects();
-        const hash = window.location.hash;
-        if(hash && hash.includes('data=')) {
-            try { applyData(JSON.parse(decodeURIComponent(escape(atob(hash.split('data=')[1]))))); toggleView(true); } catch(e) {}
-        } else {
-            const s = JSON.parse(localStorage.getItem('church_v43'));
-            if(s) applyData(s);
-        }
+        const s = JSON.parse(localStorage.getItem('church_v43'));
+        if(s) applyData(s);
     };
 </script>
 </body>
