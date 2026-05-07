@@ -3,277 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Соборяне v43</title>
-    
-    <link rel="manifest" href="manifest.json">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#1a365d">
+    <title>Соборяне v44</title>
     <link rel="apple-touch-icon" href="icon-512.png">
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // Твои настройки из Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyC_dR0ih2xTPTN7gH403UWp6a9E0MwwYKQ",
+            authDomain: "soboryane-f9c70.firebaseapp.com",
+            projectId: "soboryane-f9c70",
+            storageBucket: "soboryane-f9c70.firebasestorage.app",
+            messagingSenderId: "868266001348",
+            appId: "1:868266001348:web:eb7f66071da6be08d1da91",
+            databaseURL: "https://soboryane-f9c70-default-rtdb.firebaseio.com"
+        };
+
+        // Инициализация
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const scheduleRef = ref(db, 'schedule');
+        const chatRef = ref(db, 'chat');
+
+        // Функции для работы с облаком
+        window.saveToCloud = (data) => set(scheduleRef, data);
+        window.sendMsgToCloud = (msg) => push(chatRef, { 
+            text: msg, 
+            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+        });
+
+        // Слушаем изменения расписания (синхронизация)
+        onValue(scheduleRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                Object.keys(data).forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el && el !== document.activeElement) el.value = data[id];
+                });
+            }
+        });
+
+        // Слушаем чат (синхронизация)
+        onValue(chatRef, (snapshot) => {
+            const msgs = snapshot.val();
+            const box = document.getElementById('chat-box');
+            box.innerHTML = '';
+            if (msgs) {
+                Object.values(msgs).forEach(m => {
+                    const div = document.createElement('div');
+                    div.className = "bg-white p-2 rounded shadow-sm border-l-4 border-blue-400 text-sm";
+                    div.innerHTML = `<span class="text-gray-400 text-[10px] block">${m.time}</span>${m.text}`;
+                    box.appendChild(div);
+                });
+                box.scrollTop = box.scrollHeight;
+            }
+        });
+    </script>
 
     <style>
-        :root { --blue: #1a365d; --green: #27ae60; --orange: #f39c12; --gray: #f8f9fa; }
-        body { font-family: -apple-system, sans-serif; background: #e9ecef; margin: 0; padding: 10px; }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        
-        header { display: flex; flex-direction: column; align-items: center; gap: 5px; margin-bottom: 15px; }
-        h1 { color: var(--blue); font-size: 1.3rem; text-transform: uppercase; margin: 0; }
-        .date-picker-main { padding: 8px; border: 2px solid var(--blue); border-radius: 8px; font-weight: bold; font-family: inherit; }
-
-        .sun-header-input { background: transparent; border: none; color: white; text-align: center; font-weight: 900; width: 50%; font-size: 14px; border-bottom: 1px dashed rgba(255,255,255,0.5); outline: none; margin: 0 5px; }
-        input, select { padding: 10px; border: 2px solid #ced4da; border-radius: 8px; font-weight: 900; font-size: 15px; width: 100%; box-sizing: border-box; }
-        
-        .day-card { background: white; border: 2px solid #343a40; margin-bottom: 12px; border-radius: 10px; overflow: hidden; position: relative; }
-        .day-header { background: #343a40; color: white; padding: 8px; text-align: center; font-weight: 900; font-size: 14px; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; }
-        .day-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-        .day-body.hidden-by-fest { display: none !important; }
-
-        .fest-card { border-color: var(--orange); margin-left: 15px; border-style: dashed; }
-        .fest-card::before { content: "↳ ПРАЗДНИК"; position: absolute; left: -15px; top: -10px; color: var(--orange); font-size: 9px; font-weight: bold; background: white; padding: 0 4px; }
-
-        .service-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .label-min { font-size: 10px; color: #6c757d; text-transform: uppercase; font-weight: bold; }
-        
-        .fest-grid { display: grid; grid-template-columns: 1fr; gap: 10px; padding: 10px; }
-        @media (min-width: 600px) { .fest-grid { grid-template-columns: 1fr 1fr; } }
-        
-        .morning-row, .evening-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
-        .vk-box { background: #f0f2f5; border: 2px dashed var(--blue); padding: 10px; border-radius: 10px; margin-bottom: 15px; }
-        
-        .controls-sticky { position: sticky; bottom: 10px; background: white; padding: 10px; display: flex; flex-wrap: wrap; gap: 6px; border-radius: 12px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); margin-top: 20px; z-index: 100; }
-        .btn { flex: 1; min-width: 80px; padding: 12px; font-weight: 900; border: none; border-radius: 8px; font-size: 10px; color: white; cursor: pointer; text-transform: uppercase; }
-        .btn-save { background: var(--blue); }
-        .btn-view { background: var(--orange); }
-        .btn-print { background: #34495e; }
-        .btn-share-link { background: #2980b9; }
-        .del-btn { position: absolute; top: 5px; right: 5px; background: #e74c3c; color: white; border: none; border-radius: 4px; padding: 4px 8px; z-index: 10; }
-        
-        .exit-viewer { text-align: center; margin: 20px 0; color: var(--blue); font-weight: bold; cursor: pointer; text-decoration: underline; display: none; }
-
-        body.view-only .no-print, body.view-only .del-btn, body.view-only .controls-sticky, body.view-only .fest-card::before { display: none !important; }
-        body.view-only select { border: none !important; background: none !important; appearance: none; pointer-events: none; font-size: 13px; color: black !important; padding: 0; font-weight: 900; white-space: nowrap; }
-        body.view-only .sun-header-input { border: none; font-size: 14px; width: auto; }
-        body.view-only .exit-viewer { display: block !important; }
-
-        @media print {
-            @page { size: A4 portrait; margin: 8mm; }
-            body { background: white; padding: 0; }
-            .container { box-shadow: none; padding: 0; max-width: 100%; border: none; }
-            .no-print, .controls-sticky, .del-btn, .exit-viewer { display: none !important; }
-            #main-schedule { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 5pt !important; }
-            .day-card { border: 1pt solid black !important; margin-bottom: 0 !important; border-radius: 0 !important; page-break-inside: avoid; margin-left: 0 !important; }
-            .day-header { background: #f0f0f0 !important; color: black !important; border-bottom: 1pt solid black; padding: 2pt !important; font-size: 10pt !important; }
-            select { border: none !important; appearance: none; font-size: 9pt !important; font-weight: bold !important; color: black !important; background: none !important; padding: 0 !important; display: block; width: 100%; }
-        }
+        .ios-fix { -webkit-tap-highlight-color: transparent; }
+        body { background: #f0f2f5; font-family: -apple-system, sans-serif; }
+        input:focus { outline: 2px solid #3b82f6; background: #eff6ff; }
     </style>
 </head>
-<body>
-
-<div class="container">
-    <header class="no-print">
-        <h1>Соборяне</h1>
-        <input type="date" id="start-date" class="date-picker-main" onchange="refreshDates()">
-    </header>
-
-    <div id="sunday-special">
-        <div class="day-card" style="border-color: var(--blue);">
-            <div class="day-header" style="background: var(--blue);">
-                ВОСКРЕСЕНЬЕ 
-                <input type="text" id="sun-fest-name" class="sun-header-input" placeholder="Праздник...">
-                <span id="date-0"></span>
+<body class="p-2 ios-fix">
+    <div class="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="bg-blue-800 p-4 text-white text-center">
+            <h1 class="text-xl font-bold italic">⛪ Соборяне v44</h1>
+            <p class="text-xs opacity-80">Облачная синхронизация активна</p>
+        </div>
+        
+        <div class="p-4">
+            <div class="overflow-hidden border rounded-xl mb-6 shadow-sm">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-blue-50 text-blue-900 text-xs uppercase">
+                        <tr>
+                            <th class="p-3 border-b w-16">День</th>
+                            <th class="p-3 border-b">Утро</th>
+                            <th class="p-3 border-b">Вечер</th>
+                        </tr>
+                    </thead>
+                    <tbody id="schedule-body">
+                        </tbody>
+                </table>
             </div>
-            <div id="sun-container" class="fest-grid"></div>
+
+            <div class="bg-gray-100 rounded-2xl p-4 border border-gray-200">
+                <h2 class="font-bold text-blue-800 mb-3 flex items-center gap-2">
+                    <span>💬</span> Объявления причта
+                </h2>
+                <div id="chat-box" class="h-48 overflow-y-auto mb-3 space-y-2 p-1 flex flex-col">
+                    </div>
+                <div class="flex gap-2">
+                    <input id="chat-input" type="text" placeholder="Написать..." 
+                           class="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm shadow-inner">
+                    <button onclick="handleSendMsg()" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 rounded-full flex items-center justify-center transition shadow-lg">
+                        ➤
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="vk-box">
-        <span class="label-min" style="color: var(--blue);">🕵️ Неделя ВК</span>
-        <select id="vk-priest" class="sun-sel"></select>
-    </div>
+    <script>
+        const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+        const body = document.getElementById('schedule-body');
 
-    <div id="main-schedule"></div>
-
-    <div class="controls-sticky no-print">
-        <button id="save-btn" class="btn btn-save" onclick="save()">💾 Сохр</button>
-        <button class="btn btn-view" onclick="toggleView(true)">👁️ Вид</button>
-        <button class="btn btn-print" onclick="window.print()">🖨️ Печать</button>
-        <button class="btn btn-share-link" onclick="shareAsLink()">🔗 Ссылка</button>
-    </div>
-    
-    <div class="exit-viewer" onclick="toggleView(false)">← Вернуться в редактор</div>
-</div>
-
-<script>
-    // Регистрация Service Worker для PWA
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
-    }
-
-    const fixedNames = ["Архиерей", "о.Андрей", "о.Владимир", "о.Алексий", "о.Сергий", "о.Виктор", "о.Ал-р Ал.", "о.Ал-р Л.", "о.Павел", "о.Олег"];
-    const weekdayNames = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"];
-    const serviceTypes = ["", "Полиелей (служ.)", "Полиелей (все)", "Всенощная (все)", "Праздник (заменить этот день)"];
-    const rolesEvGrid = ["Исповедь", "Панихида", "Помазание 1", "Помазание 2"];
-
-    const mainSchedule = document.getElementById('main-schedule');
-    weekdayNames.forEach((d, i) => {
-        const dayId = i + 1;
-        mainSchedule.innerHTML += `
-            <div class="day-group" id="group-${dayId}">
-                <div class="day-card" id="card-${dayId}">
-                    <div class="day-header" id="header-${dayId}">${d} <span id="date-${dayId}"></span></div>
-                    <div class="day-body" id="body-${dayId}">
-                        <div class="service-row">
-                            <div class="service-col"><span class="label-min">Вечер</span><select class="w-type" onchange="checkFestTrigger(this, ${dayId})">${serviceTypes.map(t => `<option value="${t}">${t}</option>`).join('')}</select></div>
-                            <div class="service-col"><span class="label-min">Утро</span><select class="w-priest"></select></div>
-                        </div>
-                        <div class="service-row">
-                            <div><span class="label-min">Требный</span><select class="w-treb"></select></div>
-                            <div><span class="label-min">Дежурный</span><select class="w-dezh"></select></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="fest-sub-container" id="fest-sub-${dayId}"></div>
-            </div>`;
-    });
-
-    function checkFestTrigger(selectEl, dayId) {
-        if (selectEl.value === "Праздник (заменить этот день)") {
-            addFest(null, dayId);
-            selectEl.value = "";
-            updateDayVisibility(dayId);
-        }
-    }
-
-    function updateDayVisibility(dayId) {
-        const body = document.getElementById(`body-${dayId}`);
-        const festContainer = document.getElementById(`fest-sub-${dayId}`);
-        if (festContainer && festContainer.children.length > 0) body.classList.add('hidden-by-fest');
-        else body.classList.remove('hidden-by-fest');
-    }
-
-    function getEveningHTML(className) {
-        return `<div style="margin-bottom:4px;"><span class="label-min">Всенощная</span><select class="${className}"></select></div>
-                <div class="evening-grid">${rolesEvGrid.map(r => `<div><span class="label-min">${r}</span><select class="${className}"></select></div>`).join('')}</div>`;
-    }
-
-    document.getElementById('sun-container').innerHTML = `
-        <div><strong>Суббота (Вечер):</strong>${getEveningHTML('sun-sel')}</div>
-        <div><strong>Воскресенье (Утро):</strong>
-            <div class="morning-row"><div><span class="label-min">Ранняя</span><select class="sun-sel"></select></div><div><span class="label-min">Требный</span><select class="sun-sel"></select></div></div>
-            <div class="morning-row"><div><span class="label-min">Поздняя</span><select class="sun-sel"></select></div><div><span class="label-min">Требный</span><select class="sun-sel"></select></div></div>
-            <div class="morning-row"><div><span class="label-min">Проповедь</span><select class="sun-sel"></select></div><div><span class="label-min">Панихида</span><select class="sun-sel"></select></div></div>
-        </div>`;
-
-    function syncSelects() {
-        document.querySelectorAll('select:not(.w-type)').forEach(s => {
-            const val = s.value;
-            s.innerHTML = '<option></option>' + fixedNames.map(n => `<option value="${n}">${n}</option>`).join('');
-            s.value = val;
+        // Генерируем строки таблицы
+        days.forEach((day, i) => {
+            const row = document.createElement('tr');
+            row.className = "hover:bg-gray-50 transition";
+            row.innerHTML = `
+                <td class="p-3 border-b font-bold text-gray-500 text-sm">${day}</td>
+                <td class="p-2 border-b"><input oninput="updateCloud()" id="m-${i}" type="text" class="w-full p-1.5 border rounded text-sm transition shadow-sm" placeholder="..."></td>
+                <td class="p-2 border-b"><input oninput="updateCloud()" id="e-${i}" type="text" class="w-full p-1.5 border rounded text-sm transition shadow-sm" placeholder="..."></td>
+            `;
+            body.appendChild(row);
         });
-    }
 
-    function removeFest(btn, pId) {
-        btn.parentElement.remove();
-        updateDayVisibility(pId);
-        save();
-    }
+        // Функция отправки расписания в облако
+        function updateCloud() {
+            const data = {};
+            days.forEach((_, i) => {
+                data[`m-${i}`] = document.getElementById(`m-${i}`).value;
+                data[`e-${i}`] = document.getElementById(`e-${i}`).value;
+            });
+            window.saveToCloud(data);
+        }
 
-    function addFest(data = null, parentDayId = null) {
-        const pId = data ? data.pid : parentDayId;
-        const div = document.createElement('div');
-        div.className = 'fest-card day-card';
-        div.dataset.pid = pId;
-        div.innerHTML = `<button class="del-btn no-print" onclick="removeFest(this, ${pId})">✕</button>
-            <div class="day-header" style="background:var(--orange)"><input type="text" class="f-title" placeholder="НАЗВАНИЕ ПРАЗДНИКА" style="background:transparent; border:none; color:white; text-align:center; width:80%; font-weight:900;" value="${data ? data.t : ''}"></div>
-            <div class="fest-grid" style="padding:10px">
-                <div><strong>Вечер накануне:</strong>${getEveningHTML('f-sel')}</div>
-                <div><strong>Утро праздника:</strong>
-                    <div class="morning-row"><div><span class="label-min">Ранняя Лит.</span><select class="f-sel"></select></div><div><span class="label-min">Требный</span><select class="f-sel"></select></div></div>
-                    <div class="morning-row"><div><span class="label-min">Поздняя Лит.</span><select class="f-sel"></select></div><div><span class="label-min">Требный</span><select class="f-sel"></select></div></div>
-                    <div class="morning-row"><div><span class="label-min">Проповедь</span><select class="f-sel"></select></div><div><span class="label-min">Панихида</span><select class="f-sel"></select></div></div>
-                </div>
-            </div>`;
-        document.getElementById(`fest-sub-${pId}`).appendChild(div);
-        syncSelects();
-        if(data) { const sels = div.querySelectorAll('select'); data.r.forEach((v, i) => { if(sels[i]) sels[i].value = v; }); }
-        updateDayVisibility(pId);
-    }
-
-    function refreshDates() {
-        const startVal = document.getElementById('start-date').value;
-        if(startVal) {
-            const start = new Date(startVal);
-            document.getElementById(`date-0`).innerText = `| ${start.toLocaleDateString('ru-RU')}`;
-            for(let i=1; i<=6; i++) {
-                const c = new Date(start); c.setDate(start.getDate() + i);
-                const target = document.getElementById(`date-${i}`);
-                if(target) target.innerText = `| ${c.toLocaleDateString('ru-RU')}`;
+        // Функция отправки сообщения
+        function handleSendMsg() {
+            const input = document.getElementById('chat-input');
+            if (input.value.trim()) {
+                window.sendMsgToCloud(input.value);
+                input.value = '';
             }
         }
-    }
 
-    function collectData() {
-        return {
-            wp: Array.from(document.querySelectorAll('.w-priest')).map(el => el.value),
-            wt: Array.from(document.querySelectorAll('.w-type')).map(el => el.value),
-            wtr: Array.from(document.querySelectorAll('.w-treb')).map(el => el.value),
-            wd: Array.from(document.querySelectorAll('.w-dezh')).map(el => el.value),
-            sun: Array.from(document.querySelectorAll('.sun-sel')).map(s => s.value),
-            sunFest: document.getElementById('sun-fest-name').value,
-            vk: document.getElementById('vk-priest').value,
-            d: document.getElementById('start-date').value,
-            f: Array.from(document.querySelectorAll('.fest-card')).map(c => ({ 
-                t: c.querySelector('.f-title').value, 
-                pid: c.dataset.pid,
-                r: Array.from(c.querySelectorAll('select')).map(s => s.value) 
-            }))
-        };
-    }
+        // Поддержка Enter в чате
+        document.getElementById('chat-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSendMsg();
+        });
 
-    function applyData(s) {
-        if(!s) return;
-        if(s.d) { document.getElementById('start-date').value = s.d; refreshDates(); }
-        if(s.sunFest) document.getElementById('sun-fest-name').value = s.sunFest;
-        if(s.vk) document.getElementById('vk-priest').value = s.vk;
-        if(s.wp) document.querySelectorAll('.w-priest').forEach((el, i) => el.value = s.wp[i] || '');
-        if(s.wt) document.querySelectorAll('.w-type').forEach((el, i) => el.value = s.wt[i] || '');
-        if(s.wtr) document.querySelectorAll('.w-treb').forEach((el, i) => el.value = s.wtr[i] || '');
-        if(s.wd) document.querySelectorAll('.w-dezh').forEach((el, i) => el.value = s.wd[i] || '');
-        if(s.sun) document.querySelectorAll('.sun-sel').forEach((el, i) => el.value = s.sun[i] || '');
-        if(s.f) { document.querySelectorAll('.fest-sub-container').forEach(c => c.innerHTML = ''); s.f.forEach(fData => addFest(fData)); }
-        for(let i=1; i<=6; i++) updateDayVisibility(i);
-    }
-
-    function save() {
-        localStorage.setItem('church_v43', JSON.stringify(collectData()));
-        const b = document.getElementById('save-btn'); b.innerText = '✅ ОК';
-        setTimeout(() => b.innerText = '💾 СОХР', 1000);
-    }
-
-    function toggleView(isView) {
-        if(isView) document.body.classList.add('view-only');
-        else document.body.classList.remove('view-only');
-    }
-
-    function shareAsLink() {
-        const encodedData = btoa(unescape(encodeURIComponent(JSON.stringify(collectData()))));
-        const url = window.location.href.split('#')[0] + '#data=' + encodedData;
-        const el = document.createElement('textarea'); el.value = url; document.body.appendChild(el); el.select();
-        document.execCommand('copy'); document.body.removeChild(el);
-        alert("Ссылка скопирована!");
-    }
-
-    window.onload = () => {
-        syncSelects();
-        const hash = window.location.hash;
-        if(hash && hash.includes('data=')) {
-            try { applyData(JSON.parse(decodeURIComponent(escape(atob(hash.split('data=')[1]))))); toggleView(true); } catch(e) {}
-        } else {
-            const s = JSON.parse(localStorage.getItem('church_v43'));
-            if(s) applyData(s);
+        // Service Worker для PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
         }
-    };
-</script>
+    </script>
 </body>
 </html>
