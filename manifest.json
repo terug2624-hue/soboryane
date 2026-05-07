@@ -1,0 +1,16 @@
+{
+  "name": "Соборяне: Расписание",
+  "short_name": "Соборяне",
+  "description": "Приложение для составления расписания собора",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#1a365d",
+  "theme_color": "#1a365d",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
