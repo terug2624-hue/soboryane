@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Соборяне v49 (Автономный)</title>
+    <title>Соборяне v48 (Автономный)</title>
 
     <link rel="manifest" href="manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
@@ -13,6 +13,7 @@
     <link rel="apple-touch-icon" href="icon-512.png">
 
     <script type="module">
+        // Подключаем локальные файлы, которые вы скачали на Шаге 1
         import { initializeApp } from "./firebase-app.js";
         import { getDatabase, ref, set, onValue } from "./firebase-database.js";
 
@@ -39,8 +40,7 @@
         onValue(dataRef, (snapshot) => {
             const data = snapshot.val();
             if (data && navigator.onLine) {
-                const active = document.activeElement;
-                if (active.tagName !== 'INPUT' && active.tagName !== 'SELECT' && active.tagName !== 'TEXTAREA') {
+                if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
                     window.applyData(data);
                 }
             }
@@ -57,12 +57,15 @@
         .date-picker-main { padding: 8px; border: 2px solid var(--blue); border-radius: 8px; font-weight: bold; font-family: inherit; }
 
         .sun-header-input { background: transparent; border: none; color: white; text-align: center; font-weight: 900; width: 50%; font-size: 14px; border-bottom: 1px dashed rgba(255,255,255,0.5); outline: none; margin: 0 5px; }
-        input, select, textarea { padding: 10px; border: 2px solid #ced4da; border-radius: 8px; font-weight: 900; font-size: 15px; width: 100%; box-sizing: border-box; font-family: inherit; }
+        input, select { padding: 10px; border: 2px solid #ced4da; border-radius: 8px; font-weight: 900; font-size: 15px; width: 100%; box-sizing: border-box; }
 
         .day-card { background: white; border: 2px solid #343a40; margin-bottom: 12px; border-radius: 10px; overflow: hidden; position: relative; }
         .day-header { background: #343a40; color: white; padding: 8px; text-align: center; font-weight: 900; font-size: 14px; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; }
         .day-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
         .day-body.hidden-by-fest { display: none !important; }
+
+        .fest-card { border-color: var(--orange); margin-left: 15px; border-style: dashed; }
+        .fest-card::before { content: "↳ ПРАЗДНИК"; position: absolute; left: -15px; top: -10px; color: var(--orange); font-size: 9px; font-weight: bold; background: white; padding: 0 4px; }
 
         .service-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .label-min { font-size: 10px; color: #6c757d; text-transform: uppercase; font-weight: bold; }
@@ -71,13 +74,7 @@
         @media (min-width: 600px) { .fest-grid { grid-template-columns: 1fr 1fr; } }
 
         .morning-row, .evening-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
-        
         .vk-box { background: #f0f2f5; border: 2px dashed var(--blue); padding: 10px; border-radius: 10px; margin-bottom: 15px; }
-
-        /* Стиль для доски объявлений */
-        .announcement-box { background: #fffcf0; border: 3px solid var(--orange); padding: 10px; border-radius: 12px; margin-top: 15px; margin-bottom: 15px; }
-        .announcement-box h3 { margin: 0 0 8px 0; color: var(--orange); font-size: 12px; text-transform: uppercase; display: flex; align-items: center; gap: 5px; }
-        #announcement-text { resize: none; overflow: hidden; min-height: 60px; border-color: #fce5bc; background: #fffdf5; font-weight: normal; font-size: 14px; line-height: 1.4; }
 
         .controls-sticky { position: sticky; bottom: 10px; background: white; padding: 10px; display: flex; flex-wrap: wrap; gap: 6px; border-radius: 12px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); margin-top: 20px; z-index: 100; }
         .btn { flex: 1; min-width: 80px; padding: 12px; font-weight: 900; border: none; border-radius: 8px; font-size: 10px; color: white; cursor: pointer; text-transform: uppercase; }
@@ -86,12 +83,22 @@
         .btn-print { background: #34495e; }
         .del-btn { position: absolute; top: 5px; right: 5px; background: #e74c3c; color: white; border: none; border-radius: 4px; padding: 4px 8px; z-index: 10; }
 
-        body.view-only .no-print, body.view-only .del-btn, body.view-only .controls-sticky { display: none !important; }
-        body.view-only textarea { border: none !important; background: transparent !important; padding: 0; pointer-events: none; }
-        
+        .exit-viewer { text-align: center; margin: 20px 0; color: var(--blue); font-weight: bold; cursor: pointer; text-decoration: underline; display: none; }
+
+        body.view-only .no-print, body.view-only .del-btn, body.view-only .controls-sticky, body.view-only .fest-card::before { display: none !important; }
+        body.view-only select { border: none !important; background: none !important; appearance: none; pointer-events: none; font-size: 13px; color: black !important; padding: 0; font-weight: 900; white-space: nowrap; }
+        body.view-only .sun-header-input { border: none; font-size: 14px; width: auto; }
+        body.view-only .exit-viewer { display: block !important; }
+
         @media print {
-            .no-print, .controls-sticky { display: none !important; }
-            .announcement-box { border: 1pt solid #f39c12 !important; page-break-inside: avoid; }
+            @page { size: A4 portrait; margin: 8mm; }
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; padding: 0; max-width: 100%; border: none; }
+            .no-print, .controls-sticky, .del-btn, .exit-viewer { display: none !important; }
+            #main-schedule { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 5pt !important; }
+            .day-card { border: 1pt solid black !important; margin-bottom: 0 !important; border-radius: 0 !important; page-break-inside: avoid; margin-left: 0 !important; }
+            .day-header { background: #f0f0f0 !important; color: black !important; border-bottom: 1pt solid black; padding: 2pt !important; font-size: 10pt !important; }
+            select { border: none !important; appearance: none; font-size: 9pt !important; font-weight: bold !important; color: black !important; background: none !important; padding: 0 !important; display: block; width: 100%; }
         }
     </style>
 </head>
@@ -121,18 +128,13 @@
 
     <div id="main-schedule"></div>
 
-    <div class="announcement-box">
-        <h3>📢 Доска объявлений / Объявления</h3>
-        <textarea id="announcement-text" placeholder="Введите важную информацию здесь..." oninput="autoHeight(this)"></textarea>
-    </div>
-
     <div class="controls-sticky no-print">
         <button id="save-btn" class="btn btn-save" onclick="save()">💾 Сохр</button>
         <button class="btn btn-view" onclick="toggleView(true)">👁️ Вид</button>
         <button class="btn btn-print" onclick="window.print()">🖨️ Печать</button>
     </div>
 
-    <div class="exit-viewer no-print" style="text-align:center; margin:20px; display:none; cursor:pointer; color:var(--blue); font-weight:bold; text-decoration:underline;" onclick="toggleView(false)">← В редактор</div>
+    <div class="exit-viewer" onclick="toggleView(false)">← Вернуться в редактор</div>
 </div>
 
 <script>
@@ -144,11 +146,6 @@
     const weekdayNames = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"];
     const serviceTypes = ["", "Полиелей (служ.)", "Полиелей (все)", "Всенощная (все)", "Праздник (заменить этот день)"];
     const rolesEvGrid = ["Исповедь", "Панихида", "Помазание 1", "Помазание 2"];
-
-    function autoHeight(el) {
-        el.style.height = 'auto';
-        el.style.height = el.scrollHeight + 'px';
-    }
 
     const mainSchedule = document.getElementById('main-schedule');
     weekdayNames.forEach((d, i) => {
@@ -172,6 +169,21 @@
             </div>`;
     });
 
+    function checkFestTrigger(selectEl, dayId) {
+        if (selectEl.value === "Праздник (заменить этот день)") {
+            addFest(null, dayId);
+            selectEl.value = "";
+            updateDayVisibility(dayId);
+        }
+    }
+
+    function updateDayVisibility(dayId) {
+        const body = document.getElementById(`body-${dayId}`);
+        const festContainer = document.getElementById(`fest-sub-${dayId}`);
+        if (festContainer && festContainer.children.length > 0) body.classList.add('hidden-by-fest');
+        else body.classList.remove('hidden-by-fest');
+    }
+
     function getEveningHTML(className) {
         return `<div style="margin-bottom:4px;"><span class="label-min">Всенощная</span><select class="${className}"></select></div>
                 <div class="evening-grid">${rolesEvGrid.map(r => `<div><span class="label-min">${r}</span><select class="${className}"></select></div>`).join('')}</div>`;
@@ -194,19 +206,10 @@
         });
     }
 
-    function checkFestTrigger(selectEl, dayId) {
-        if (selectEl.value === "Праздник (заменить этот день)") {
-            addFest(null, dayId);
-            selectEl.value = "";
-            updateDayVisibility(dayId);
-        }
-    }
-
-    function updateDayVisibility(dayId) {
-        const body = document.getElementById(`body-${dayId}`);
-        const festContainer = document.getElementById(`fest-sub-${dayId}`);
-        if (festContainer && festContainer.children.length > 0) body.classList.add('hidden-by-fest');
-        else body.classList.remove('hidden-by-fest');
+    function removeFest(btn, pId) {
+        btn.parentElement.remove();
+        updateDayVisibility(pId);
+        save();
     }
 
     function addFest(data = null, parentDayId = null) {
@@ -229,12 +232,6 @@
         syncSelects();
         if(data) { const sels = div.querySelectorAll('select'); data.r.forEach((v, i) => { if(sels[i]) sels[i].value = v; }); }
         updateDayVisibility(pId);
-    }
-
-    function removeFest(btn, pId) {
-        btn.parentElement.remove();
-        updateDayVisibility(pId);
-        save();
     }
 
     function refreshDates() {
@@ -260,7 +257,6 @@
             sunFest: document.getElementById('sun-fest-name').value,
             vk: document.getElementById('vk-priest').value,
             d: document.getElementById('start-date').value,
-            info: document.getElementById('announcement-text').value, // НОВОЕ
             f: Array.from(document.querySelectorAll('.fest-card')).map(c => ({
                 t: c.querySelector('.f-title').value,
                 pid: c.dataset.pid,
@@ -274,20 +270,19 @@
         if(s.d) { document.getElementById('start-date').value = s.d; refreshDates(); }
         if(s.sunFest !== undefined) document.getElementById('sun-fest-name').value = s.sunFest;
         if(s.vk) document.getElementById('vk-priest').value = s.vk;
-        if(s.info !== undefined) {
-            const area = document.getElementById('announcement-text');
-            area.value = s.info;
-            autoHeight(area);
-        }
 
         const wp = document.querySelectorAll('.w-priest');
         if(s.wp) wp.forEach((el, i) => el.value = s.wp[i] || '');
+
         const wt = document.querySelectorAll('.w-type');
         if(s.wt) wt.forEach((el, i) => el.value = s.wt[i] || '');
+
         const wtr = document.querySelectorAll('.w-treb');
         if(s.wtr) wtr.forEach((el, i) => el.value = s.wtr[i] || '');
+
         const wd = document.querySelectorAll('.w-dezh');
         if(s.wd) wd.forEach((el, i) => el.value = s.wd[i] || '');
+
         const sun = document.querySelectorAll('.sun-sel');
         if(s.sun) sun.forEach((el, i) => el.value = s.sun[i] || '');
 
@@ -307,28 +302,16 @@
     }
 
     function toggleView(isView) {
-        if(isView) {
-            document.body.classList.add('view-only');
-            document.querySelector('.exit-viewer').style.display = 'block';
-        } else {
-            document.body.classList.remove('view-only');
-            document.querySelector('.exit-viewer').style.display = 'none';
-        }
+        if(isView) document.body.classList.add('view-only');
+        else document.body.classList.remove('view-only');
     }
 
     window.onload = () => {
         syncSelects();
+        // СНАЧАЛА ЗАГРУЖАЕМ ИЗ ПАМЯТИ ТЕЛЕФОНА (Offline First)
         const s = JSON.parse(localStorage.getItem('church_v43'));
         if(s) applyData(s);
     };
-</script>
-<script>
-  let refreshing;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (refreshing) return;
-    refreshing = true;
-    window.location.reload();
-  });
 </script>
 </body>
 </html>
