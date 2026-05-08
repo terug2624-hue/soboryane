@@ -37,8 +37,13 @@
         onValue(dataRef, (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
+                // Если нижний скрипт уже загрузился — заполняем таблицу
+                if (typeof window.applyData === 'function') {
                     window.applyData(data);
+                } else {
+                    // Если нижний скрипт еще грузится — сохраняем данные в память,
+                    // и нижний скрипт сам их подхватит при загрузке (window.onload)
+                    localStorage.setItem('church_v43', JSON.stringify(data));
                 }
             }
         });
