@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Соборяне v48 (Облачный)</title>
+    <title>Соборяне v48 (Автономный)</title>
 
     <link rel="manifest" href="manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
@@ -13,8 +13,9 @@
     <link rel="apple-touch-icon" href="icon-512.png">
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        // Подключаем локальные файлы, которые вы скачали на Шаге 1
+        import { initializeApp } from "./firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "./firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyC_dR0ih2xTPTN7gH403UWp6a9E0MwwYKQ",
@@ -31,12 +32,14 @@
         const dataRef = ref(db, 'shared_schedule');
 
         window.sendToCloud = (data) => {
-            set(dataRef, data).catch(err => console.error("Ошибка облака:", err));
+            if (navigator.onLine) {
+                set(dataRef, data).catch(err => console.error("Ошибка облака:", err));
+            }
         };
 
         onValue(dataRef, (snapshot) => {
             const data = snapshot.val();
-            if (data) {
+            if (data && navigator.onLine) {
                 if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
                     window.applyData(data);
                 }
@@ -139,7 +142,7 @@
         navigator.serviceWorker.register('sw.js').catch(() => {});
     }
 
-    const fixedNames = ["Архиерей", "о.Андрей", "о.Владимир", "о.Алексий", "о.Сергий", "о.Виктор", "о.Ал-р Ал.", "Лихошерст", "о.Павел", "о.Олег"];
+    const fixedNames = ["Архиерей", "о.Андрей", "о.Владимир", "о.Алексий", "о.Сергий", "о.Виктор", "о.Ал-р Ал.", "о.Ал-р Л.", "о.Павел", "о.Олег"];
     const weekdayNames = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"];
     const serviceTypes = ["", "Полиелей (служ.)", "Полиелей (все)", "Всенощная (все)", "Праздник (заменить этот день)"];
     const rolesEvGrid = ["Исповедь", "Панихида", "Помазание 1", "Помазание 2"];
@@ -305,6 +308,7 @@
 
     window.onload = () => {
         syncSelects();
+        // СНАЧАЛА ЗАГРУЖАЕМ ИЗ ПАМЯТИ ТЕЛЕФОНА (Offline First)
         const s = JSON.parse(localStorage.getItem('church_v43'));
         if(s) applyData(s);
     };
