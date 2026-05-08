@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Соборяне v46 (Облачный)</title>
+    <title>Соборяне v48 (Облачный)</title>
 
     <link rel="manifest" href="manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
@@ -192,6 +192,7 @@
             <div class="morning-row"><div><span class="label-min">Ранняя</span><select class="sun-sel"></select></div><div><span class="label-min">Требный</span><select class="sun-sel"></select></div></div>
             <div class="morning-row"><div><span class="label-min">Поздняя</span><select class="sun-sel"></select></div><div><span class="label-min">Требный</span><select class="sun-sel"></select></div></div>
             <div class="morning-row"><div><span class="label-min">Проповедь</span><select class="sun-sel"></select></div><div><span class="label-min">Панихида</span><select class="sun-sel"></select></div></div>
+            <div style="margin-top:4px;"><span class="label-min">Дежурный</span><select class="sun-sel"></select></div>
         </div>`;
 
     function syncSelects() {
@@ -221,6 +222,7 @@
                     <div class="morning-row"><div><span class="label-min">Ранняя Лит.</span><select class="f-sel"></select></div><div><span class="label-min">Требный</span><select class="f-sel"></select></div></div>
                     <div class="morning-row"><div><span class="label-min">Поздняя Лит.</span><select class="f-sel"></select></div><div><span class="label-min">Требный</span><select class="f-sel"></select></div></div>
                     <div class="morning-row"><div><span class="label-min">Проповедь</span><select class="f-sel"></select></div><div><span class="label-min">Панихида</span><select class="f-sel"></select></div></div>
+                    <div style="margin-top:4px;"><span class="label-min">Дежурный</span><select class="f-sel"></select></div>
                 </div>
             </div>`;
         document.getElementById(`fest-sub-${pId}`).appendChild(div);
@@ -265,25 +267,25 @@
         if(s.d) { document.getElementById('start-date').value = s.d; refreshDates(); }
         if(s.sunFest !== undefined) document.getElementById('sun-fest-name').value = s.sunFest;
         if(s.vk) document.getElementById('vk-priest').value = s.vk;
-        
+
         const wp = document.querySelectorAll('.w-priest');
         if(s.wp) wp.forEach((el, i) => el.value = s.wp[i] || '');
-        
+
         const wt = document.querySelectorAll('.w-type');
         if(s.wt) wt.forEach((el, i) => el.value = s.wt[i] || '');
-        
+
         const wtr = document.querySelectorAll('.w-treb');
         if(s.wtr) wtr.forEach((el, i) => el.value = s.wtr[i] || '');
-        
+
         const wd = document.querySelectorAll('.w-dezh');
         if(s.wd) wd.forEach((el, i) => el.value = s.wd[i] || '');
-        
+
         const sun = document.querySelectorAll('.sun-sel');
         if(s.sun) sun.forEach((el, i) => el.value = s.sun[i] || '');
-        
-        if(s.f) { 
-            document.querySelectorAll('.fest-sub-container').forEach(c => c.innerHTML = ''); 
-            s.f.forEach(fData => addFest(fData)); 
+
+        if(s.f) {
+            document.querySelectorAll('.fest-sub-container').forEach(c => c.innerHTML = '');
+            s.f.forEach(fData => addFest(fData));
         }
         for(let i=1; i<=6; i++) updateDayVisibility(i);
     }
