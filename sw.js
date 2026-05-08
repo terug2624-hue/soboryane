@@ -1,4 +1,4 @@
-const CACHE_NAME = 'soboryane-v60'; // Меняйте номер версии здесь при каждом обновлении
+const CACHE_NAME = 'soboryane-v70'; // Меняйте номер версии здесь при каждом обновлении
 const ASSETS = [
   './',
   './index.html',
