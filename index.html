@@ -13,38 +13,22 @@
     <link rel="apple-touch-icon" href="icon-512.png">
 
     <script type="module">
-        // Подключаем локальные файлы, которые вы скачали на Шаге 1
-        import { initializeApp } from "./firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "./firebase-database.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyC_dR0ih2xTPTN7gH403UWp6a9E0MwwYKQ",
-            authDomain: "soboryane-f9c70.firebaseapp.com",
-            projectId: "soboryane-f9c70",
-            storageBucket: "soboryane-f9c70.firebasestorage.app",
-            messagingSenderId: "868266001348",
-            appId: "1:868266001348:web:eb7f66071da6be08d1da91",
-            databaseURL: "https://soboryane-f9c70-default-rtdb.firebaseio.com"
+            apiKey: "AIzaSyC_dR0ih2xTPTN7gH403UMp8a9E6mWmYKQ",
+            authDomain: "soboryane-95963.firebaseapp.com",
+            databaseURL: "https://soboryane-95963-default-rtdb.firebaseio.com",
+            projectId: "soboryane-95963",
+            storageBucket: "soboryane-95963.appspot.com",
+            messagingSenderId: "367204561081",
+            appId: "1:367204561081:web:d8753228795779693c121e"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const dataRef = ref(db, 'shared_schedule');
-
-        window.sendToCloud = (data) => {
-            if (navigator.onLine) {
-                set(dataRef, data).catch(err => console.error("Ошибка облака:", err));
-            }
-        };
-
-        onValue(dataRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data && navigator.onLine) {
-                if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
-                    window.applyData(data);
-                }
-            }
-        });
+        window.db = db; window.ref = ref; window.set = set; window.onValue = onValue;
     </script>
 
     <style>
